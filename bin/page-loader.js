@@ -9,6 +9,6 @@ program
   .option('-o, --output [dir]', 'output dir (default: "/home/user/current-dir")')
   .action((url) => {
     console.log(url);
-  })
+  });
 
 program.parse();
