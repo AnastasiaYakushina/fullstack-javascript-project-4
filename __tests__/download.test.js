@@ -24,7 +24,7 @@ test('download', async () => {
     });
 
   const expected = await fs.readFile(getFixturePath('test.url.html'), 'utf8');
-  await download(tempDir, 'https://en.wikipedia.org/wiki/Asynchrony_(computer_programming)');
+  await download('https://en.wikipedia.org/wiki/Asynchrony_(computer_programming)', tempDir);
   const filePath = path.join(tempDir, '/en-wikipedia-org-wiki-Asynchrony--computer-programming-.html');
   const actual = await fs.readFile(filePath, 'utf8');
   expect(actual).toEqual(expected);
