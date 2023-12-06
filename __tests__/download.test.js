@@ -5,6 +5,8 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import download from '../src/download.js';
 
+nock.disableNetConnect();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -19,11 +21,11 @@ beforeEach(async () => {
 test('download', async () => {
   nock('https://en.wikipedia.org')
     .get('/wiki/Asynchrony_(computer_programming)')
-    .replyWithFile(200, getFixturePath('test.url.html'), {
+    .replyWithFile(200, getFixturePath('test.html'), {
       'Content-Type': 'text/html',
     });
 
-  const expected = await fs.readFile(getFixturePath('test.url.html'), 'utf8');
+  const expected = await fs.readFile(getFixturePath('test.html'), 'utf8');
   await download('https://en.wikipedia.org/wiki/Asynchrony_(computer_programming)', tempDir);
   const filePath = path.join(tempDir, '/en-wikipedia-org-wiki-Asynchrony--computer-programming-.html');
   const actual = await fs.readFile(filePath, 'utf8');
