@@ -18,5 +18,3 @@ const download = (url, outputPath = workingDir) => {
 };
 
 export default download;
-
-
