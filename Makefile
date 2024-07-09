@@ -6,3 +6,6 @@ page-loader:
 
 publish:
 	npm publish --dry-run
+
+lint:
+	npx eslint .
