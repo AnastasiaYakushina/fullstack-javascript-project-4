@@ -1,1 +1,1 @@
-export default (dirpath, url) => {};
+export default (url, dirpath = process.cwd()) => {};
