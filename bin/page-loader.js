@@ -10,7 +10,7 @@ program
   .argument('<url>')
   .action((url) => {
     const options = program.opts();
-    console.log(loadPage(url, options.output));
+    loadPage(url, options.output);
   });
 
 program.parse(process.argv);
