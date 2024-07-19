@@ -9,10 +9,12 @@ export const getAttributeValues = (html, tag, attr) => {
   return result;
 };
 
-export const changeAttributeValues = (html, tag, attr, newValues) => {
+export const changeAttributeValues = (html, tags, newValues) => {
   const $ = cherio.load(html);
-  $(tag).each((i, item) => {
-    $(item).attr(attr, newValues[i]);
+  tags.forEach(({ tag, attr }) => {
+    $(tag).each((i, item) => {
+      $(item).attr(attr, newValues[$(item).attr(attr)]);
+    });
   });
   return $.html();
 };

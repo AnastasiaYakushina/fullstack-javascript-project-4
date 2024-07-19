@@ -14,34 +14,49 @@ nock.disableNetConnect();
 const url = 'https://ru.hexlet.io/courses';
 const filesDirname = 'ru-hexlet-io-courses_files';
 const imageName = 'ru-hexlet-io-assets-professions-nodejs.png';
+const jsName = 'ru-hexlet-io-packs-js-runtime.js';
+const cssName = 'ru-hexlet-io-assets-application.css';
+const htmlName = 'ru-hexlet-io-courses.html';
 
 let tempdir;
-let response;
-let filepath;
+let htmlFilepath;
+
+let html;
 let image;
+let js;
+let css;
 
 beforeEach(async () => {
   tempdir = await fs.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
-  response = await fs.readFile(getFixturePath('before.html'), 'utf-8');
-  filepath = path.join(tempdir, 'ru-hexlet-io-courses.html');
-  image = await fs.readFile(getFixturePath('nodejs.png'), 'utf-8');
+  htmlFilepath = path.join(tempdir, htmlName);
+  html = await fs.readFile(getFixturePath('before.html'), 'utf-8');
   nock('https://ru.hexlet.io')
     .get('/courses')
-    .reply(200, response);
+    .twice()
+    .reply(200, html);
+  image = await fs.readFile(getFixturePath('nodejs.png'), 'utf-8');
   nock('https://ru.hexlet.io')
     .get('/assets/professions/nodejs.png')
     .reply(200, image);
+  js = await fs.readFile(getFixturePath('runtime.js'), 'utf-8');
+  nock('https://ru.hexlet.io')
+    .get('/packs/js/runtime.js')
+    .reply(200, js);
+  css = await fs.readFile(getFixturePath('application.css'), 'utf-8');
+  nock('https://ru.hexlet.io')
+    .get('/assets/application.css')
+    .reply(200, css);
 });
 
 test('return correct filepath', async () => {
   const actual = await downloadPage(url, tempdir);
-  expect(actual).toBe(filepath);
+  expect(actual).toBe(htmlFilepath);
 });
 
-test('write file', async () => {
+test('write html', async () => {
   await downloadPage(url, tempdir);
   const files = await fs.readdir(tempdir);
-  expect(files).toContain('ru-hexlet-io-courses.html');
+  expect(files).toContain(htmlName);
 });
 
 test('create dir', async () => {
@@ -52,16 +67,39 @@ test('create dir', async () => {
 
 test('replace links', async () => {
   await downloadPage(url, tempdir);
-  const actual = await fs.readFile(filepath, 'utf-8');
+  const actual = await fs.readFile(htmlFilepath, 'utf-8');
   const expected = await fs.readFile(getFixturePath('after.html'), 'utf-8');
   expect(actual).toBe(expected);
 });
 
 test('download image', async () => {
   await downloadPage(url, tempdir);
-  const imagepath = path.join(tempdir, filesDirname, imageName);
-  const actual = await fs.readFile(imagepath, 'utf-8');
-  expect(actual).toBe(image);
+  const filepath = path.join(tempdir, filesDirname, imageName);
+  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(image);
+});
+
+test('download js', async () => {
+  await downloadPage(url, tempdir);
+  const filepath = path.join(tempdir, filesDirname, jsName);
+  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(js);
+});
+
+test('download css', async () => {
+  await downloadPage(url, tempdir);
+  const filepath = path.join(tempdir, filesDirname, cssName);
+  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(css);
+});
+
+test('download html', async () => {
+  await downloadPage(url, tempdir);
+  const filepath = path.join(tempdir, filesDirname, htmlName);
+  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(html);
+});
+
+test.each([imageName, jsName, cssName, htmlName])('correct filename (%s)', async (filename) => {
+  await downloadPage(url, tempdir);
+  const files = await fs.readdir(path.join(tempdir, filesDirname));
+  expect(files).toContain(filename);
 });
 
 // test('non-existent dir', async () => {

@@ -2,37 +2,55 @@ import axios from 'axios';
 import path from 'path';
 import fs from 'fs/promises';
 import { getAttributeValues, changeAttributeValues } from './manipulateHtml.js';
-import { generateHtmlName, generateFilesDirName, generateImageName } from './generateName.js';
+import generateName from './generateName.js';
+
+const tags = [
+  { tag: 'img', attr: 'src' },
+  { tag: 'link', attr: 'href' },
+  { tag: 'script', attr: 'src' },
+];
+
+const isLocal = (url, mainUrl) => {
+  const mainUrlObject = new URL(mainUrl);
+  const urlObject = new URL(url, mainUrl);
+  return urlObject.host === mainUrlObject.host;
+};
+
+const getNewFilePath = (filePath, url) => {
+  if (!isLocal(filePath, url)) {
+    return filePath.href;
+  }
+  return `${generateName(url, 'dir')}/${generateName(filePath)}`;
+};
 
 export default (url, dirpath = process.cwd()) => {
-  const objectURL = new URL(url);
-  const { protocol, host } = objectURL;
-  const htmlFilepath = path.join(dirpath, generateHtmlName(url));
-  const filesDirpath = path.join(dirpath, generateFilesDirName(url));
+  const htmlFilepath = path.join(dirpath, generateName(url));
+  const filesDirpath = path.join(dirpath, generateName(url, 'dir'));
   let data;
-  let imagePaths;
-  let imageNames;
+  let filePaths;
+  let fileUrls;
   return axios.get(url)
     .then((response) => {
       data = response.data;
     })
     .then(() => fs.mkdir(filesDirpath))
     .then(() => {
-      imagePaths = getAttributeValues(data, 'img', 'src');
+      filePaths = tags.reduce((acc, { tag, attr }) => {
+        const newAcc = [...acc, getAttributeValues(data, tag, attr)];
+        return newAcc.flat();
+      }, []);
     })
     .then(() => {
-      imageNames = imagePaths.map((imagePath) => generateImageName(host, imagePath));
+      fileUrls = filePaths.map((filepath) => new URL(filepath, url));
     })
-    .then(() => imagePaths.map((imagePath) => axios.get(path.join(protocol, host, imagePath))))
+    .then(() => fileUrls.filter(({ href }) => isLocal(href, url)))
+    .then((onlyLocalUrls) => onlyLocalUrls.map((localUrl) => axios.get(localUrl.href)))
     .then((promises) => Promise.all(promises))
-    .then((images) => images.map((image, i) => fs.writeFile(path.join(filesDirpath, imageNames[i]), image.data)))
+    .then((files) => files.map((file) => fs.writeFile(path.join(filesDirpath, generateName(file.config.url)), file.data)))
     .then(() => {
-      const newImagePaths = imageNames.map((imageName) => path.join(generateFilesDirName(url), imageName));
-      data = changeAttributeValues(data, 'img', 'src', newImagePaths);
+      const newFilePaths = filePaths.reduce((acc, filePath) => ({ ...acc, [filePath]: getNewFilePath(new URL(filePath, url), url) }), {});
+      data = changeAttributeValues(data, tags, newFilePaths);
     })
     .then(() => fs.writeFile(htmlFilepath, data))
-    .then(() => htmlFilepath)
-    .catch((e) => {
-      throw new Error(e);
-    });
+    .then(() => htmlFilepath);
 };
