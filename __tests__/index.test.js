@@ -3,12 +3,14 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs/promises';
 import nock from 'nock';
+import debug from 'debug';
 import downloadPage from '../src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const getFixturePath = (name) => path.join(__dirname, '..', '__fixtures__', name);
 
+debug.enable('page-loader');
 nock.disableNetConnect();
 
 const url = 'https://ru.hexlet.io/courses';
@@ -30,22 +32,16 @@ beforeEach(async () => {
   tempdir = await fs.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
   htmlFilepath = path.join(tempdir, htmlName);
   html = await fs.readFile(getFixturePath('before.html'), 'utf-8');
-  nock('https://ru.hexlet.io')
-    .get('/courses')
-    .twice()
-    .reply(200, html);
+  nock('https://ru.hexlet.io').get('/courses').twice().reply(200, html);
   image = await fs.readFile(getFixturePath('nodejs.png'), 'utf-8');
-  nock('https://ru.hexlet.io')
-    .get('/assets/professions/nodejs.png')
-    .reply(200, image);
+  nock('https://ru.hexlet.io').get('/assets/professions/nodejs.png').reply(200, image);
   js = await fs.readFile(getFixturePath('runtime.js'), 'utf-8');
-  nock('https://ru.hexlet.io')
-    .get('/packs/js/runtime.js')
-    .reply(200, js);
+  nock('https://ru.hexlet.io').get('/packs/js/runtime.js').reply(200, js);
   css = await fs.readFile(getFixturePath('application.css'), 'utf-8');
-  nock('https://ru.hexlet.io')
-    .get('/assets/application.css')
-    .reply(200, css);
+  nock('https://ru.hexlet.io').get('/assets/application.css').reply(200, css);
+
+  nock('https://ru.hexlet.io').get('/non_existent').reply(404);
+  nock('https://ru.hexlet.io').get('/some_page').reply(500);
 });
 
 test('return correct filepath', async () => {
@@ -72,38 +68,55 @@ test('replace links', async () => {
   expect(actual).toBe(expected);
 });
 
-test('download image', async () => {
-  await downloadPage(url, tempdir);
-  const filepath = path.join(tempdir, filesDirname, imageName);
-  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(image);
+describe('download files', () => {
+  test('download image', async () => {
+    await downloadPage(url, tempdir);
+    const filepath = path.join(tempdir, filesDirname, imageName);
+    await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(image);
+  });
+
+  test('download js', async () => {
+    await downloadPage(url, tempdir);
+    const filepath = path.join(tempdir, filesDirname, jsName);
+    await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(js);
+  });
+
+  test('download css', async () => {
+    await downloadPage(url, tempdir);
+    const filepath = path.join(tempdir, filesDirname, cssName);
+    await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(css);
+  });
+
+  test('download html', async () => {
+    await downloadPage(url, tempdir);
+    const filepath = path.join(tempdir, filesDirname, htmlName);
+    await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(html);
+  });
 });
 
-test('download js', async () => {
-  await downloadPage(url, tempdir);
-  const filepath = path.join(tempdir, filesDirname, jsName);
-  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(js);
+describe('correct filename', () => {
+  test.each([imageName, jsName, cssName, htmlName])('(%s)', async (filename) => {
+    await downloadPage(url, tempdir);
+    const files = await fs.readdir(path.join(tempdir, filesDirname));
+    expect(files).toContain(filename);
+  });
 });
 
-test('download css', async () => {
-  await downloadPage(url, tempdir);
-  const filepath = path.join(tempdir, filesDirname, cssName);
-  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(css);
-});
+describe('errors', () => {
+  test('non-existent dir', async () => {
+    await expect(downloadPage(url, 'no_dir')).rejects.toThrow('Error: ENOENT: no such file or directory, mkdir \'no_dir/ru-hexlet-io-courses_files\'');
+  });
 
-test('download html', async () => {
-  await downloadPage(url, tempdir);
-  const filepath = path.join(tempdir, filesDirname, htmlName);
-  await expect(fs.readFile(filepath, 'utf-8')).resolves.toBe(html);
-});
+  test('no access', async () => {
+    await fs.chmod(tempdir, 0o400);
+    await expect(downloadPage(url, tempdir)).rejects.toThrow();
+  });
 
-test.each([imageName, jsName, cssName, htmlName])('correct filename (%s)', async (filename) => {
-  await downloadPage(url, tempdir);
-  const files = await fs.readdir(path.join(tempdir, filesDirname));
-  expect(files).toContain(filename);
-});
+  test('non-existent page', async () => {
+    await expect(downloadPage('https://ru.hexlet.io/non_existent', tempdir)).rejects.toThrow();
+  });
 
-// test('non-existent dir', async () => {
-//   await expect(() => {
-//    downloadPage(url, 'no_dir');
-//   }).toThrow();
-// });
+  test('error on the server', async () => {
+    await expect(downloadPage('https://ru.hexlet.io/some_page', tempdir)).rejects.toThrow();
+  });
+});
