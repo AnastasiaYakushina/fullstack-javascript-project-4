@@ -25,10 +25,6 @@
     "axios-debug-log": "^1.0.0",
     "cheerio": "^1.0.0-rc.12",
     "commander": "^12.1.0",
-    "debug": "^4.3.5",
-    "listr": "^0.14.3"
-  },
-  "devDependencies": {
     "@eslint/create-config": "^1.0.0",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.6.0",
@@ -38,7 +34,11 @@
     "eslint-plugin-jsx-a11y": "^6.9.0",
     "eslint-plugin-react": "^7.34.3",
     "eslint-plugin-react-hooks": "^4.6.2",
+    "debug": "^4.3.5",
     "globals": "^15.8.0",
+    "listr": "^0.14.3"
+  },
+  "devDependencies": {
     "jest": "^29.7.0",
     "nock": "^13.5.4"
   }
