@@ -3,7 +3,7 @@
 [![Actions Status](https://github.com/AnastasiaYakushina/fullstack-javascript-project-4/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/AnastasiaYakushina/fullstack-javascript-project-4/actions)
 
 В проекте применялись:
-- разработка через тестирование (TDD) с использованием мокинга, асинхронного кода (async/await)
+- разработка через тестирование (TDD) с использованием асинхронного кода (async/await)
 - работа с библиотеками: axios, cheerio, commander, debug, jest, nock, fs, path
 - промисы (then, catch) в основном коде программы
 - обработка HTML-кода
