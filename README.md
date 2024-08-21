@@ -1,5 +1,5 @@
 <h1>Загрузчик страниц (PageLoader)</h1>
-### Hexlet tests and linter status:
+
 [![Actions Status](https://github.com/AnastasiaYakushina/fullstack-javascript-project-4/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/AnastasiaYakushina/fullstack-javascript-project-4/actions)
 
 В проекте применялись:
